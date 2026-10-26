@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liceista en acción</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #05070a;
+            color: #ffffff;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        .font-pixel {
+            font-family: 'Press Start 2P', monospace;
+        }
+        canvas {
+            image-rendering: pixelated;
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+        }
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-pulse-red {
+            animation: pulse-red 1.2s infinite;
+        }
+        @keyframes screamer-zoom {
+            0% { transform: scale(0.7) rotate(-3deg); }
+            50% { transform: scale(1.15) rotate(3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .screamer-anim {
+            animation: screamer-zoom 0.15s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 md:p-4 bg-slate-950">
+
+    <!-- Container Principal estilo Calabozo -->
+    <div class="relative w-full max-w-4xl bg-slate-950 border-4 border-red-950 rounded-xl overflow-hidden shadow-2xl flex flex-col items-center border-opacity-80">
+
+        <!-- HEADER DEL JUEGO -->
+        <header class="w-full bg-slate-900 px-4 py-3 border-b-2 border-red-950 flex flex-wrap justify-between items-center gap-2 z-10">
+            <h1 class="font-pixel text-red-600 text-lg md:text-xl tracking-wider flex items-center gap-2">
+                <span>⚓</span> LICEISTA EN ACCIÓN
+            </h1>
+            <div id="game-stats" class="hidden flex items-center gap-3 text-xs md:text-sm">
+                <div class="flex items-center gap-1 bg-slate-950 px-3 py-1 rounded border border-slate-800">
+                    <span class="text-slate-400">Nivel:</span>
+                    <span id="stat-level" class="font-bold text-yellow-500">1/4</span>
+                </div>
+                <div class="flex items-center gap-1 bg-slate-950 px-3 py-1 rounded border border-slate-800">
+                    <span class="text-slate-400">Progreso:</span>
+                    <span id="stat-progress" class="font-bold text-emerald-500">0/5</span>
+                </div>
+                <div class="flex items-center gap-1 bg-slate-950 px-3 py-1 rounded border border-slate-800">
+                    <span class="text-slate-400">Vidas:</span>
+                    <span id="stat-lives" class="font-bold text-red-500">❤️❤️❤️</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- PANTALLA DE INICIO / MENU PRINCIPAL -->
+        <div id="screen-menu" class="w-full p-6 flex flex-col items-center justify-center min-h-[500px] text-center bg-gradient-to-b from-slate-950 via-slate-900 to-black">
+            <div class="mb-6">
+                <span class="text-5xl md:text-6xl mb-2 block animate-bounce">🏰⚓🕷️</span>
+                <h2 class="font-pixel text-2xl md:text-4xl text-red-700 mb-2 drop-shadow-[0_4px_12px_rgba(185,28,28,0.8)]">LICEISTA EN ACCIÓN</h2>
+                <p class="text-slate-400 text-sm max-w-md">Escapa del calabozo respondiendo las preguntas de tus materias antes de que tus miedos te alcancen.</p>
+            </div>
+
+            <!-- Selección de Dificultad -->
+            <div class="w-full max-w-md bg-slate-950/90 p-4 rounded-lg border border-slate-800 mb-6 shadow-inner">
+                <h3 class="font-pixel text-xs text-amber-500 mb-3">DIFICULTAD</h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setDifficulty('facil')" id="btn-diff-facil" class="diff-btn py-2 px-3 text-xs font-bold rounded bg-emerald-950/70 border-2 border-emerald-600 text-emerald-300">
+                        FÁCIL<br><span class="text-[10px] opacity-80 font-normal">3 Vidas · Lento</span>
+                    </button>
+                    <button onclick="setDifficulty('medio')" id="btn-diff-medio" class="diff-btn py-2 px-3 text-xs font-bold rounded bg-slate-900 border-2 border-slate-700 text-slate-400">
+                        MEDIO<br><span class="text-[10px] opacity-80 font-normal">3 Vidas · Normal</span>
+                    </button>
+                    <button onclick="setDifficulty('dificil')" id="btn-diff-dificil" class="diff-btn py-2 px-3 text-xs font-bold rounded bg-slate-900 border-2 border-slate-700 text-slate-400">
+                        DIFÍCIL<br><span class="text-[10px] opacity-80 font-normal">1 Vida · Rápido</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selección de Niveles/Mapas -->
+            <div class="w-full max-w-md bg-slate-950/90 p-4 rounded-lg border border-slate-800 mb-6">
+                <h3 class="font-pixel text-xs text-amber-500 mb-3">SELECCIONAR MATERIA / NIVEL</h3>
+                <div class="grid grid-cols-2 gap-3 text-xs" id="level-buttons-container">
+                    <!-- Dinámico vía JS -->
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="font-pixel py-3 px-8 bg-red-900 hover:bg-red-800 text-white rounded-lg border-2 border-red-600 shadow-xl shadow-red-950/70 transform hover:scale-105 transition active:scale-95 text-sm md:text-base">
+                ▶ ENTRAR AL CALABOZO
+            </button>
+        </div>
+
+        <!-- CANVAS DEL JUEGO -->
+        <div id="canvas-container" class="relative hidden w-full flex flex-col items-center justify-center p-2 bg-black">
+            <canvas id="gameCanvas" width="672" height="528" class="max-w-full h-auto border-2 border-slate-900 rounded bg-black"></canvas>
+            
+            <!-- Banner Inferior -->
+            <div id="subject-banner" class="w-full bg-slate-950 mt-2 p-2 text-center text-xs text-slate-400 font-pixel border-t border-slate-900">
+                Materia Actual: <span id="current-subject-title" class="text-amber-400">Matemáticas</span>
+            </div>
+
+            <!-- Controles Táctiles Mobile -->
+            <div class="flex md:hidden justify-center items-center gap-2 mt-3 w-full max-w-xs">
+                <div class="grid grid-cols-3 gap-2 w-full">
+                    <div></div>
+                    <button ontouchstart="handleTouch('Up')" onclick="handleTouch('Up')" class="bg-slate-900 p-4 rounded-lg text-xl border border-slate-800">⬆️</button>
+                    <div></div>
+                    <button ontouchstart="handleTouch('Left')" onclick="handleTouch('Left')" class="bg-slate-900 p-4 rounded-lg text-xl border border-slate-800">⬅️</button>
+                    <button ontouchstart="handleTouch('Down')" onclick="handleTouch('Down')" class="bg-slate-900 p-4 rounded-lg text-xl border border-slate-800">⬇️</button>
+                    <button ontouchstart="handleTouch('Right')" onclick="handleTouch('Right')" class="bg-slate-900 p-4 rounded-lg text-xl border border-slate-800">➡️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PREGUNTA MATERIA -->
+        <div id="modal-question" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-slate-950 border-4 border-amber-600/80 rounded-xl p-6 max-w-lg w-full shadow-2xl relative text-left">
+                <!-- Header Pregunta -->
+                <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+                    <span id="question-materia-badge" class="font-pixel text-xs bg-amber-950/70 text-amber-300 px-3 py-1 rounded border border-amber-600">
+                        MATEMÁTICAS
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">Tiempo:</span>
+                        <span id="question-timer" class="font-pixel text-red-500 text-lg">20s</span>
+                    </div>
+                </div>
+
+                <!-- Barra de Progreso Tiempo -->
+                <div class="w-full bg-slate-900 h-2 rounded-full mb-4 overflow-hidden border border-slate-800">
+                    <div id="question-timer-bar" class="bg-red-700 h-full w-full transition-all duration-1000"></div>
+                </div>
+
+                <!-- Enunciado -->
+                <p id="question-text" class="text-base md:text-lg font-medium text-slate-100 mb-6">
+                    ¿Pregunta?
+                </p>
+
+                <!-- Opciones -->
+                <div id="question-options" class="space-y-3">
+                    <!-- JS generará las opciones -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREAMER / GAME OVER -->
+        <div id="screen-screamer" class="fixed inset-0 bg-black hidden flex-col items-center justify-center z-50 p-4">
+            <div class="screamer-anim flex flex-col items-center justify-center">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzxJLQpKMHLb4AiI5Spk8UZeMLf9sE0NzzMDhHiSnEJw&s=10" 
+                     alt="Screamer Reprobaste" 
+                     class="w-72 h-72 md:w-96 md:h-96 object-cover border-4 border-red-700 rounded-lg shadow-[0_0_60px_rgba(220,38,38,0.9)] mb-6">
+                <h2 class="font-pixel text-5xl md:text-7xl text-red-600 font-extrabold tracking-widest text-center animate-pulse-red drop-shadow-[0_0_25px_rgba(220,38,38,1)]">
+                    REPROBASTE
+                </h2>
+                <p class="text-slate-400 text-sm mt-4 font-mono">Los monstruos del liceo te han acorralado...</p>
+                <button onclick="resetToMenu()" class="mt-8 font-pixel py-3 px-6 bg-red-950 hover:bg-red-900 text-white rounded border-2 border-red-700 transition">
+                    🔄 VOLVER AL INICIO
+                </button>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE VICTORIA -->
+        <div id="screen-victory" class="fixed inset-0 bg-slate-950/95 hidden flex-col items-center justify-center z-50 p-6 text-center">
+            <div class="max-w-md bg-slate-900 border-4 border-amber-500 rounded-xl p-8 shadow-2xl">
+                <span class="text-6xl mb-4 block">🔑⚓🚢</span>
+                <h2 class="font-pixel text-2xl text-amber-400 mb-4">¡HAS ESCAPADO POR EL PUERTO!</h2>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    ¡Felicitaciones Liceista! Has superado todas las preguntas de Matemáticas, Ciencias, Estudios Sociales y Lengua. La Procrastinación, Ansiedad, Impotencia y Miedo han sido vencidas.
+                </p>
+                <button onclick="resetToMenu()" class="font-pixel py-3 px-6 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded border-2 border-amber-300 transition">
+                    🎮 VOLVER A JUGAR
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* ==========================================
+           1. BANCO DE PREGUNTAS (20 TOTAL / 5 POR MATERIA)
+           ========================================== */
+        const QUESTIONS_DATABASE = {
+            matematicas: [
+                { q: "¿Cuánto es 8 × 7?", options: ["54", "56", "64", "49"], correct: 1 },
+                { q: "¿Cuál es la raíz cuadrada de 81?", options: ["8", "9", "7", "10"], correct: 1 },
+                { q: "Si un triángulo tiene lados de 3cm, 4cm y 5cm, ¿cuál es su perímetro?", options: ["12 cm", "15 cm", "9 cm", "20 cm"], correct: 0 },
+                { q: "Resuelve: 15 - 3 × 4 + 2", options: ["5", "50", "35", "14"], correct: 0 },
+                { q: "¿Cuál es el valor de 'x' en 2x = 18?", options: ["6", "8", "9", "12"], correct: 2 }
+            ],
+            ciencias: [
+                { q: "¿Cuál es el órgano principal del sistema circulatorio?", options: ["Pulmones", "Cerebro", "Corazón", "Estómago"], correct: 2 },
+                { q: "¿Qué proceso usan las plantas para fabricar su alimento usando la luz solar?", options: ["Respiración", "Fotosíntesis", "Digestión", "Germinación"], correct: 1 },
+                { q: "¿Cuál es el planeta más grande del sistema solar?", options: ["Tierra", "Júpiter", "Marte", "Saturno"], correct: 1 },
+                { q: "¿Qué estado de la materia es el vapor de agua?", options: ["Sólido", "Líquido", "Gaseoso", "Plasma"], correct: 2 },
+                { q: "¿Cuál es el gas que necesitamos para respirar?", options: ["Dióxido de carbono", "Nitrógeno", "Oxígeno", "Helio"], correct: 2 }
+            ],
+            sociales: [
+                { q: "¿Cuál es el océano más grande de la Tierra?", options: ["Atlántico", "Índico", "Pacífico", "Ártico"], correct: 2 },
+                { q: "¿En qué continente se encuentra Ecuador?", options: ["Europa", "América del Sur", "Asia", "África"], correct: 1 },
+                { q: "¿Cuál es la capital del Ecuador?", options: ["Guayaquil", "Cuenca", "Quito", "Ambato"], correct: 2 },
+                { q: "¿Qué línea imaginaria divide a la Tierra en hemisferio Norte y Sur?", options: ["Trópico de Cáncer", "Ecuador", "Meridiano de Greenwich", "Polo Sur"], correct: 1 },
+                { q: "¿Qué representación gráfica muestra toda la superficie terrestre de forma plana?", options: ["Globo terráqueo", "Mapa físico", "Planisferio / Mapa Mundi", "Croquis"], correct: 2 }
+            ],
+            lengua: [
+                { q: "¿Cuál es el sustantivo en la oración: 'El perro corre rápido'?", options: ["El", "perro", "corre", "rápido"], correct: 1 },
+                { q: "¿Cuál de las siguientes palabras es aguda?", options: ["Canción", "Mesa", "Lápiz", "Pájaro"], correct: 0 },
+                { q: "¿Qué tipo de palabra indica una acción?", options: ["Sustantivo", "Adjetivo", "Verbo", "Artículo"], correct: 2 },
+                { q: "¿Cuál es el antónimo de 'Oscuridad'?", options: ["Noche", "Sombra", "Luz", "Opaco"], correct: 2 },
+                { q: "¿Cuál es la forma correcta de escribir el plural de 'Lápiz'?", options: ["Lapices", "Lápizes", "Lápices", "Lapizs"], correct: 2 }
+            ]
+        };
+
+        const SUBJECT_CONFIG = [
+            { id: 'matematicas', name: 'Matemáticas', color: '#eab308' },
+            { id: 'ciencias', name: 'Ciencias Naturales', color: '#10b981' },
+            { id: 'sociales', name: 'Estudios Sociales', color: '#3b82f6' },
+            { id: 'lengua', name: 'Lengua y Literatura', color: '#a855f7' }
+        ];
+
+        /* ==========================================
+           2. ESTADO GENERAL
+           ========================================== */
+        let currentDifficulty = 'facil';
+        let unlockedLevels = [true, false, false, false];
+        let currentLevelIndex = 0;
+        let lives = 3;
+        let maxLives = 3;
+        let enemySpeedMultiplier = 1.0;
+        let isGameRunning = false;
+        let isPausedForModal = false;
+
+        let levelQuestions = [];
+        let currentQuestionObj = null;
+        let questionTimerInterval = null;
+        let questionTimeRemaining = 20;
+
+        let audioCtx = null;
+        let animFrameId = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+            try {
+                if (!audioCtx || audioCtx.state === 'suspended') return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        /* ==========================================
+           3. UI Y SELECCIÓN DE DIFICULTAD/NIVELES
+           ========================================== */
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(b => {
+                b.className = 'diff-btn py-2 px-3 text-xs font-bold rounded bg-slate-900 border-2 border-slate-700 text-slate-400';
+            });
+
+            const activeBtn = document.getElementById(`btn-diff-${diff}`);
+            if(diff === 'facil') {
+                activeBtn.className = 'diff-btn py-2 px-3 text-xs font-bold rounded bg-emerald-950/80 border-2 border-emerald-500 text-emerald-300';
+            } else if(diff === 'medio') {
+                activeBtn.className = 'diff-btn py-2 px-3 text-xs font-bold rounded bg-amber-950/80 border-2 border-amber-500 text-amber-300';
+            } else {
+                activeBtn.className = 'diff-btn py-2 px-3 text-xs font-bold rounded bg-red-950/80 border-2 border-red-600 text-red-300';
+            }
+        }
+
+        function renderLevelButtons() {
+            const container = document.getElementById('level-buttons-container');
+            container.innerHTML = '';
+
+            SUBJECT_CONFIG.forEach((subj, idx) => {
+                const isUnlocked = unlockedLevels[idx];
+                const btn = document.createElement('button');
+                btn.disabled = !isUnlocked;
+                btn.className = `p-3 rounded border-2 flex flex-col items-center justify-center transition ${
+                    isUnlocked 
+                        ? (currentLevelIndex === idx 
+                            ? 'bg-slate-900 border-amber-500 text-amber-300 font-bold shadow-md' 
+                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-600')
+                        : 'bg-slate-950 border-slate-900 text-slate-600 cursor-not-allowed opacity-50'
+                }`;
+
+                btn.onclick = () => {
+                    currentLevelIndex = idx;
+                    renderLevelButtons();
+                };
+
+                btn.innerHTML = `
+                    <span class="font-pixel text-[10px] mb-1">Nivel ${idx + 1}</span>
+                    <span class="text-xs">${isUnlocked ? (idx === 3 && unlockedLevels[3] ? '🔑 ' : '📘 ') + subj.name : '🔒 Bloqueado'}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        renderLevelButtons();
+
+        /* ==========================================
+           4. LABERINTO TIPO CALABOZO PACMAN
+           ========================================== */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const TILE = 24; 
+        const GRID_W = 28;
+        const GRID_H = 22;
+
+        // Map Grid: 1=Pared Calabozo, 0=Pasillo Piso, 2=Libro, 3=Llave Puerto
+        const MAZE_TEMPLATE = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,2,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,2,1],
+            [1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1,1,1,0,1,0,1,1,1,1,0,1],
+            [1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1,1,1,0,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,0,1,0,1,1,1,0,0,0,0,1,1,1,0,1,0,1,1,1,1,1,1],
+            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+            [1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,2,1],
+            [1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let maze = [];
+        const keysPressed = {};
+
+        /* ==========================================
+           5. JUGADOR Y ENEMIGOS CON PATHFINDING VALIDO
+           ========================================== */
+        class Player {
+            constructor() {
+                this.x = 13 * TILE;
+                this.y = 16 * TILE;
+                this.speed = 2.4;
+            }
+
+            resetPos() {
+                this.x = 13 * TILE;
+                this.y = 16 * TILE;
+            }
+
+            update() {
+                let dx = 0;
+                let dy = 0;
+
+                if (keysPressed['ArrowUp'] || keysPressed['w'] || keysPressed['W']) dy -= 1;
+                if (keysPressed['ArrowDown'] || keysPressed['s'] || keysPressed['S']) dy += 1;
+                if (keysPressed['ArrowLeft'] || keysPressed['a'] || keysPressed['A']) dx -= 1;
+                if (keysPressed['ArrowRight'] || keysPressed['d'] || keysPressed['D']) dx += 1;
+
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.7071;
+                    dy *= 0.7071;
+                }
+
+                if (dx !== 0 || dy !== 0) {
+                    const stepX = dx * this.speed;
+                    const stepY = dy * this.speed;
+
+                    if (this.canMoveTo(this.x + stepX, this.y + stepY)) {
+                        this.x += stepX;
+                        this.y += stepY;
+                    } else if (dx !== 0 && this.canMoveTo(this.x + stepX, this.y)) {
+                        this.x += stepX;
+                    } else if (dy !== 0 && this.canMoveTo(this.x, this.y + stepY)) {
+                        this.y += stepY;
+                    }
+                }
+
+                // Wrap-around horizontal
+                if (this.x < -TILE / 2) this.x = (GRID_W - 1) * TILE;
+                if (this.x > (GRID_W - 1) * TILE) this.x = 0;
+
+                // Check Ítems
+                const tileX = Math.floor((this.x + TILE / 2) / TILE);
+                const tileY = Math.floor((this.y + TILE / 2) / TILE);
+
+                if (maze[tileY] && maze[tileY][tileX] === 2) {
+                    maze[tileY][tileX] = 0;
+                    triggerQuestionModal();
+                } else if (maze[tileY] && maze[tileY][tileX] === 3) {
+                    triggerVictory();
+                }
+            }
+
+            canMoveTo(nextX, nextY) {
+                const margin = 3;
+                const left = Math.floor((nextX + margin) / TILE);
+                const right = Math.floor((nextX + TILE - margin - 1) / TILE);
+                const top = Math.floor((nextY + margin) / TILE);
+                const bottom = Math.floor((nextY + TILE - margin - 1) / TILE);
+
+                if (maze[top] && maze[top][left] === 1) return false;
+                if (maze[top] && maze[top][right] === 1) return false;
+                if (maze[bottom] && maze[bottom][left] === 1) return false;
+                if (maze[bottom] && maze[bottom][right] === 1) return false;
+
+                return true;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const p = TILE / 16;
+
+                // Gorra Liceísta
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(2*p, 0*p, 12*p, 4*p);
+                ctx.fillStyle = '#1e1e1e';
+                ctx.fillRect(1*p, 3.5*p, 14*p, 1.5*p);
+                ctx.fillStyle = '#EAB308';
+                ctx.fillRect(2*p, 3*p, 12*p, 1*p);
+                ctx.fillRect(7.5*p, 1*p, 1*p, 2*p);
+                ctx.fillRect(6.5*p, 2*p, 3*p, 0.8*p);
+
+                // Rostro
+                ctx.fillStyle = '#FCA5A5';
+                ctx.fillRect(3*p, 4.5*p, 10*p, 5.5*p);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(5*p, 6*p, 1.5*p, 2*p);
+                ctx.fillRect(9.5*p, 6*p, 1.5*p, 2*p);
+                ctx.fillStyle = '#451a03';
+                ctx.fillRect(4.5*p, 5.2*p, 2*p, 0.6*p);
+                ctx.fillRect(9.5*p, 5.2*p, 2*p, 0.6*p);
+                ctx.fillRect(2*p, 4.5*p, 1.5*p, 2.5*p);
+
+                // Uniforme Azul
+                ctx.fillStyle = '#1D4ED8';
+                ctx.fillRect(3*p, 10*p, 10*p, 4*p);
+                ctx.fillStyle = '#EAB308';
+                ctx.fillRect(5.5*p, 10.5*p, 1*p, 1*p);
+                ctx.fillRect(9.5*p, 10.5*p, 1*p, 1*p);
+                ctx.fillRect(5.5*p, 12*p, 1*p, 1*p);
+                ctx.fillRect(9.5*p, 12*p, 1*p, 1*p);
+
+                // Pantalón Blanco
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(3*p, 13.5*p, 10*p, 1*p);
+                ctx.fillStyle = '#EAB308';
+                ctx.fillRect(7*p, 13.2*p, 2*p, 1.3*p);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(4*p, 14.5*p, 3.5*p, 1.5*p);
+                ctx.fillRect(8.5*p, 14.5*p, 3.5*p, 1.5*p);
+                ctx.fillStyle = '#1D4ED8';
+                ctx.fillRect(5.5*p, 14.5*p, 0.8*p, 1.5*p);
+                ctx.fillRect(9.8*p, 14.5*p, 0.8*p, 1.5*p);
+
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor(type, startTileX, startTileY) {
+                this.type = type; // 'celular', 'tormenta', 'rayo', 'arana'
+                this.tileX = startTileX;
+                this.tileY = startTileY;
+                this.x = startTileX * TILE;
+                this.y = startTileY * TILE;
+                this.startX = this.x;
+                this.startY = this.y;
+                this.startTileX = startTileX;
+                this.startTileY = startTileY;
+                this.dirX = 0;
+                this.dirY = 0;
+                this.baseSpeed = 1.3;
+                this.animFrame = 0;
+            }
+
+            resetPos() {
+                this.tileX = this.startTileX;
+                this.tileY = this.startTileY;
+                this.x = this.startX;
+                this.y = this.startY;
+                this.dirX = 0;
+                this.dirY = 0;
+            }
+
+            update() {
+                const speed = this.baseSpeed * enemySpeedMultiplier;
+                this.animFrame += 0.1;
+
+                // Si está alineado con la cuadrícula de celda, calcular la siguiente mejor dirección
+                if (Math.abs(this.x - this.tileX * TILE) < speed && Math.abs(this.y - this.tileY * TILE) < speed) {
+                    this.x = this.tileX * TILE;
+                    this.y = this.tileY * TILE;
+
+                    const playerTileX = Math.floor((player.x + TILE / 2) / TILE);
+                    const playerTileY = Math.floor((player.y + TILE / 2) / TILE);
+
+                    const directions = [
+                        { x: 1, y: 0 },
+                        { x: -1, y: 0 },
+                        { x: 0, y: 1 },
+                        { x: 0, y: -1 }
+                    ];
+
+                    // Filtrar solo las casillas transitables (no paredes)
+                    const validDirs = directions.filter(d => {
+                        const targetX = this.tileX + d.x;
+                        const targetY = this.tileY + d.y;
+                        if (targetX < 0 || targetX >= GRID_W || targetY < 0 || targetY >= GRID_H) return false;
+                        return maze[targetY][targetX] !== 1;
+                    });
+
+                    if (validDirs.length > 0) {
+                        // Evitar reversa inmediata si hay otras alternativas para evitar oscilación
+                        const nonReverseDirs = validDirs.filter(d => !(d.x === -this.dirX && d.y === -this.dirY));
+                        const choices = nonReverseDirs.length > 0 ? nonReverseDirs : validDirs;
+
+                        // Ordenar por cercanía a la posición actual del Liceísta
+                        choices.sort((a, b) => {
+                            const distA = Math.hypot((this.tileX + a.x) - playerTileX, (this.tileY + a.y) - playerTileY);
+                            const distB = Math.hypot((this.tileX + b.x) - playerTileX, (this.tileY + b.y) - playerTileY);
+                            return distA - distB;
+                        });
+
+                        // Elección con ligero factor aleatorio para dynamismo
+                        const selected = (Math.random() < 0.85 || choices.length === 1) ? choices[0] : choices[Math.floor(Math.random() * choices.length)];
+                        this.dirX = selected.x;
+                        this.dirY = selected.y;
+                        this.tileX += this.dirX;
+                        this.tileY += this.dirY;
+                    }
+                }
+
+                this.x += this.dirX * speed;
+                this.y += this.dirY * speed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const p = TILE / 16;
+
+                if (this.type === 'celular') {
+                    // Celular - Procrastinación
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(3*p, 1*p, 10*p, 14*p);
+                    ctx.fillStyle = '#e11d48';
+                    ctx.fillRect(4.5*p, 2.5*p, 7*p, 10*p);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(6*p, 4*p, 4*p, 1.5*p);
+                    ctx.fillRect(6*p, 7*p, 3*p, 1.5*p);
+                } else if (this.type === 'tormenta') {
+                    // Tormenta - Ansiedad (Nube de tormenta con destellos)
+                    const bob = Math.sin(this.animFrame) * 1.5;
+                    ctx.translate(0, bob);
+                    ctx.fillStyle = '#334155';
+                    ctx.beginPath();
+                    ctx.arc(8*p, 7*p, 6*p, 0, Math.PI * 2);
+                    ctx.arc(4*p, 9*p, 4.5*p, 0, Math.PI * 2);
+                    ctx.arc(12*p, 9*p, 4.5*p, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Rayitos de ansiedad debajo
+                    if (Math.floor(this.animFrame) % 2 === 0) {
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.fillRect(5*p, 12*p, 1.5*p, 3*p);
+                        ctx.fillRect(10*p, 12*p, 1.5*p, 3*p);
+                    }
+                } else if (this.type === 'rayo') {
+                    // Rayo - Impotencia
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.moveTo(9*p, 1*p);
+                    ctx.lineTo(4*p, 8*p);
+                    ctx.lineTo(8*p, 8*p);
+                    ctx.lineTo(5*p, 15*p);
+                    ctx.lineTo(12*p, 7*p);
+                    ctx.lineTo(8.5*p, 7*p);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'arana') {
+                    // Araña Mejorada - Miedo (Cuerpo oscuro, abdomen rojo, patas vivas)
+                    const legMove = Math.sin(this.animFrame * 2) * 2;
+
+                    // Patas de araña
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 1.8;
+                    ctx.beginPath();
+                    // Patas izquierdas
+                    ctx.moveTo(6*p, 6*p); ctx.lineTo(1*p, (2 + legMove)*p);
+                    ctx.moveTo(6*p, 8*p); ctx.lineTo(0*p, 8*p);
+                    ctx.moveTo(6*p, 10*p); ctx.lineTo(1*p, (14 - legMove)*p);
+                    // Patas derechas
+                    ctx.moveTo(10*p, 6*p); ctx.lineTo(15*p, (2 - legMove)*p);
+                    ctx.moveTo(10*p, 8*p); ctx.lineTo(16*p, 8*p);
+                    ctx.moveTo(10*p, 10*p); ctx.lineTo(15*p, (14 + legMove)*p);
+                    ctx.stroke();
+
+                    // Abdomen trasero negro/rojo
+                    ctx.fillStyle = '#7f1d1d';
+                    ctx.beginPath();
+                    ctx.arc(8*p, 10.5*p, 4.5*p, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Cabeza
+                    ctx.fillStyle = '#111827';
+                    ctx.beginPath();
+                    ctx.arc(8*p, 5.5*p, 3*p, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Ojos rojos brillantes de terror
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(6.5*p, 4.5*p, 1*p, 1.2*p);
+                    ctx.fillRect(8.5*p, 4.5*p, 1*p, 1.2*p);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Instancias con posiciones iniciales 100% dentro de pasillos del calabozo
+        const player = new Player();
+        const ghosts = [
+            new Enemy('celular', 1, 1),      // Procrastinación (Esquina Sup Izq)
+            new Enemy('tormenta', 26, 1),     // Ansiedad (Esquina Sup Der)
+            new Enemy('rayo', 1, 20),         // Impotencia (Esquina Inf Izq)
+            new Enemy('arana', 26, 20)        // Miedo (Esquina Inf Der)
+        ];
+
+        /* ==========================================
+           6. RENDERIZADO ESTILO CALABOZO OSCURO
+           ========================================== */
+        function gameLoop() {
+            if (isGameRunning && !isPausedForModal) {
+                updateGame();
+                renderGame();
+            }
+            animFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateGame() {
+            player.update();
+
+            ghosts.forEach(g => {
+                g.update();
+
+                const dist = Math.hypot((player.x + TILE/2) - (g.x + TILE/2), (player.y + TILE/2) - (g.y + TILE/2));
+                if (dist < TILE * 0.70) {
+                    handlePlayerHit();
+                }
+            });
+        }
+
+        function drawDungeonTile(c, r, cell, activeSubject) {
+            const x = c * TILE;
+            const y = r * TILE;
+
+            if (cell === 1) {
+                // Pared de piedra oscura del Calabozo (Dark Slate/Brick)
+                ctx.fillStyle = '#111625';
+                ctx.fillRect(x, y, TILE, TILE);
+
+                // Bordes y textura de ladrillo oscuro opaco
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+
+                ctx.fillStyle = '#1c2436';
+                ctx.fillRect(x + 2, y + 3, 9, 7);
+                ctx.fillRect(x + 13, y + 3, 9, 7);
+                ctx.fillRect(x + 2, y + 13, 19, 7);
+            } else {
+                // Piso de piedra opaca de calabozo
+                ctx.fillStyle = '#090d16';
+                ctx.fillRect(x, y, TILE, TILE);
+                ctx.strokeStyle = '#0f172a';
+                ctx.strokeRect(x, y, TILE, TILE);
+
+                if (cell === 2) {
+                    // Libro de Materia Ilustrado
+                    drawPixelBook(x, y, activeSubject.color);
+                } else if (cell === 3) {
+                    // Llave de Escape Dorada
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.font = '16px sans-serif';
+                    ctx.fillText('🔑', x + 2, y + 18);
+                }
+            }
+        }
+
+        function drawPixelBook(x, y, primaryColor) {
+            ctx.save();
+            ctx.translate(x, y);
+            const p = TILE / 16;
+
+            ctx.fillStyle = primaryColor;
+            ctx.fillRect(3*p, 3*p, 10*p, 11*p);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(2*p, 3*p, 2*p, 11*p);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(4*p, 12*p, 8*p, 2*p);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(7*p, 5*p, 2*p, 5*p);
+
+            ctx.restore();
+        }
+
+        function renderGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const activeSubject = SUBJECT_CONFIG[currentLevelIndex];
+            for (let r = 0; r < GRID_H; r++) {
+                for (let c = 0; c < GRID_W; c++) {
+                    drawDungeonTile(c, r, maze[r][c], activeSubject);
+                }
+            }
+
+            // Antorchas tenues en esquinas para iluminación de ambiente de calabozo
+            const torchTime = Date.now() * 0.005;
+            const flicker = Math.sin(torchTime) * 3;
+            ctx.fillStyle = `rgba(245, 158, 11, ${0.12 + Math.sin(torchTime*2)*0.03})`;
+            ctx.beginPath();
+            ctx.arc(4*TILE, 4*TILE, 45 + flicker, 0, Math.PI*2);
+            ctx.arc(23*TILE, 4*TILE, 45 + flicker, 0, Math.PI*2);
+            ctx.arc(4*TILE, 17*TILE, 45 + flicker, 0, Math.PI*2);
+            ctx.arc(23*TILE, 17*TILE, 45 + flicker, 0, Math.PI*2);
+            ctx.fill();
+
+            // Dibujar Entidades
+            player.draw();
+            ghosts.forEach(g => g.draw());
+        }
+
+        /* ==========================================
+           7. MECÁNICAS DE JUEGO & PREGUNTAS
+           ========================================== */
+        function startGame() {
+            initAudio();
+
+            if (currentDifficulty === 'facil') {
+                lives = 3;
+                enemySpeedMultiplier = 0.75;
+            } else if (currentDifficulty === 'medio') {
+                lives = 3;
+                enemySpeedMultiplier = 1.05;
+            } else {
+                lives = 1;
+                enemySpeedMultiplier = 1.45;
+            }
+            maxLives = lives;
+
+            loadSubjectLevel(currentLevelIndex);
+
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-screamer').classList.add('hidden');
+            document.getElementById('screen-victory').classList.add('hidden');
+            document.getElementById('canvas-container').classList.remove('hidden');
+            document.getElementById('game-stats').classList.remove('hidden');
+
+            isGameRunning = true;
+            isPausedForModal = false;
+        }
+
+        function loadSubjectLevel(lvlIdx) {
+            currentLevelIndex = lvlIdx;
+            const subject = SUBJECT_CONFIG[lvlIdx];
+
+            maze = MAZE_TEMPLATE.map(row => [...row]);
+            levelQuestions = [...QUESTIONS_DATABASE[subject.id]];
+
+            document.getElementById('stat-level').innerText = `${lvlIdx + 1}/4`;
+            document.getElementById('current-subject-title').innerText = subject.name;
+            document.getElementById('current-subject-title').style.color = subject.color;
+            updateLivesUI();
+            updateProgressUI(0);
+
+            player.resetPos();
+            ghosts.forEach(g => g.resetPos());
+        }
+
+        function updateLivesUI() {
+            let hearts = '';
+            for(let i=0; i<lives; i++) hearts += '❤️';
+            document.getElementById('stat-lives').innerText = hearts || '💀';
+        }
+
+        function updateProgressUI(answeredCount) {
+            document.getElementById('stat-progress').innerText = `${answeredCount}/5`;
+        }
+
+        function handlePlayerHit() {
+            playBeep(140, 'sawtooth', 0.2);
+            lives--;
+            updateLivesUI();
+
+            if (lives <= 0) {
+                triggerScreamer();
+            } else {
+                player.resetPos();
+                ghosts.forEach(g => g.resetPos());
+            }
+        }
+
+        function triggerQuestionModal() {
+            if (levelQuestions.length === 0) return;
+
+            isPausedForModal = true;
+            currentQuestionObj = levelQuestions.pop();
+
+            const subject = SUBJECT_CONFIG[currentLevelIndex];
+            const badge = document.getElementById('question-materia-badge');
+            badge.innerText = subject.name.toUpperCase();
+            badge.style.backgroundColor = subject.color + '22';
+            badge.style.borderColor = subject.color;
+
+            document.getElementById('question-text').innerText = currentQuestionObj.q;
+
+            const optsContainer = document.getElementById('question-options');
+            optsContainer.innerHTML = '';
+
+            currentQuestionObj.options.forEach((optText, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-850 hover:border-amber-500 text-slate-200 transition text-sm flex items-center gap-3";
+                btn.innerHTML = `<span class="font-pixel text-xs text-amber-500 bg-slate-950 px-2 py-1 rounded border border-slate-800">${String.fromCharCode(65 + optIdx)}</span> ${optText}`;
+                btn.onclick = () => answerQuestion(optIdx);
+                optsContainer.appendChild(btn);
+            });
+
+            questionTimeRemaining = 20;
+            document.getElementById('question-timer').innerText = `${questionTimeRemaining}s`;
+            document.getElementById('question-timer-bar').style.width = '100%';
+
+            document.getElementById('modal-question').classList.remove('hidden');
+
+            clearInterval(questionTimerInterval);
+            questionTimerInterval = setInterval(() => {
+                questionTimeRemaining--;
+                document.getElementById('question-timer').innerText = `${questionTimeRemaining}s`;
+                document.getElementById('question-timer-bar').style.width = `${(questionTimeRemaining / 20) * 100}%`;
+
+                if (questionTimeRemaining <= 0) {
+                    clearInterval(questionTimerInterval);
+                    closeQuestionModal();
+                    triggerScreamer();
+                }
+            }, 1000);
+        }
+
+        function answerQuestion(selectedIdx) {
+            clearInterval(questionTimerInterval);
+            closeQuestionModal();
+
+            if (selectedIdx === currentQuestionObj.correct) {
+                playBeep(523.25, 'sine', 0.15);
+                const answered = 5 - levelQuestions.length;
+                updateProgressUI(answered);
+
+                if (answered >= 5) {
+                    if (currentLevelIndex < 3) {
+                        unlockedLevels[currentLevelIndex + 1] = true;
+                        currentLevelIndex++;
+                        renderLevelButtons();
+                        loadSubjectLevel(currentLevelIndex);
+                    } else {
+                        spawnPuertoKey();
+                    }
+                }
+            } else {
+                triggerScreamer();
+            }
+        }
+
+        function closeQuestionModal() {
+            document.getElementById('modal-question').classList.add('hidden');
+            isPausedForModal = false;
+        }
+
+        function spawnPuertoKey() {
+            maze[10][13] = 3;
+            document.getElementById('current-subject-title').innerText = "¡PUERTO DE ESCAPE ABIERTO! TOMA LA LLAVE 🔑";
+            document.getElementById('current-subject-title').style.color = "#f59e0b";
+        }
+
+        /* ==========================================
+           8. SCREAMER & VICTORIA
+           ========================================== */
+        function triggerScreamer() {
+            isGameRunning = false;
+            clearInterval(questionTimerInterval);
+
+            // Detención inmediata de sonido
+            if (audioCtx) {
+                audioCtx.suspend();
+            }
+
+            document.getElementById('modal-question').classList.add('hidden');
+            document.getElementById('screen-screamer').classList.remove('hidden');
+            document.getElementById('screen-screamer').classList.add('flex');
+        }
+
+        function triggerVictory() {
+            isGameRunning = false;
+            document.getElementById('screen-victory').classList.remove('hidden');
+            document.getElementById('screen-victory').classList.add('flex');
+        }
+
+        function resetToMenu() {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            isGameRunning = false;
+            isPausedForModal = false;
+
+            document.getElementById('screen-screamer').classList.add('hidden');
+            document.getElementById('screen-screamer').classList.remove('flex');
+            document.getElementById('screen-victory').classList.add('hidden');
+            document.getElementById('screen-victory').classList.remove('flex');
+            document.getElementById('canvas-container').classList.add('hidden');
+            document.getElementById('game-stats').classList.add('hidden');
+            document.getElementById('screen-menu').classList.remove('hidden');
+
+            renderLevelButtons();
+        }
+
+        /* ==========================================
+           9. CONTROLES
+           ========================================== */
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'W', 'a', 'A', 's', 'S', 'd', 'D'].includes(e.key)) {
+                keysPressed[e.key] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            delete keysPressed[e.key];
+        });
+
+        function handleTouch(dir) {
+            if (!isGameRunning || isPausedForModal) return;
+            delete keysPressed['ArrowUp'];
+            delete keysPressed['ArrowDown'];
+            delete keysPressed['ArrowLeft'];
+            delete keysPressed['ArrowRight'];
+            
+            keysPressed['Arrow' + dir] = true;
+            setTimeout(() => {
+                delete keysPressed['Arrow' + dir];
+            }, 300);
+        }
+
+        window.onload = function() {
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
